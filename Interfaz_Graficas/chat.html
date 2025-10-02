@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Barra estilo ChatGPT</title>
+  <style>
+    * {margin:0; padding:0; box-sizing:border-box;}
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg,#1e3c72,#2a5298,#00d4aa);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      padding-bottom: 90px;
+      color: white;
+    }
+
+    /* Fondo animado */
+    .pixel-grid {
+      position: fixed;
+      width: 100%; height: 100%;
+      top:0; left:0;
+      display: grid;
+      grid-template-columns: repeat(30,1fr);
+      grid-template-rows: repeat(20,1fr);
+      gap:2px;
+      opacity:0.25;
+      z-index:-1;
+    }
+    .pixel {
+      background: rgba(255,255,255,0.2);
+      border-radius:2px;
+      animation: pulse 3s infinite;
+    }
+    @keyframes pulse {0%,100%{transform:scale(1);} 50%{transform:scale(1.05);}}
+
+    /* Lista de archivos */
+    .file-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+      max-width: 600px;
+    }
+    .file-chip {
+      background: rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .file-chip span {color: #00d4aa;}
+    .file-chip button {
+      border: none;
+      background: transparent;
+      color: #ff6b9d;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    /* Barra inferior tipo chat */
+    .bottom-bar {
+      position: fixed;
+      bottom: 20px;
+      width: 90%;
+      max-width: 700px;
+      background: rgba(0,0,40,0.85);
+      border-radius: 20px;
+      padding: 10px 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+      backdrop-filter: blur(6px);
+    }
+
+    .bottom-bar input[type="text"] {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: white;
+      font-size: 1rem;
+    }
+
+    .btn {
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 1.3rem;
+      padding: 5px;
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+    .btn:hover {
+      background: rgba(255,255,255,0.1);
+    }
+
+    @media(max-width:600px){
+      .bottom-bar {width:95%;}
+    }
+  </style>
+</head>
+<body>
+  <div class="pixel-grid" id="pixelGrid"></div>
+
+  <!-- Lista de archivos -->
+  <div class="file-list" id="fileList"></div>
+
+  <!-- Barra inferior estilo chat -->
+  <div class="bottom-bar">
+    <input type="file" id="fileInput" style="display:none" multiple>
+    <button class="btn" onclick="document.getElementById('fileInput').click()">📎</button>
+    <input type="text" id="messageInput" placeholder="Escribe un mensaje...">
+    <button class="btn" onclick="enviar()">📤</button>
+  </div>
+
+  <script>
+    // Fondo animado
+    const grid = document.getElementById("pixelGrid");
+    for (let i=0;i<600;i++){
+      const px = document.createElement("div");
+      px.className="pixel";
+      px.style.animationDelay=`${Math.random()*3}s`;
+      grid.appendChild(px);
+    }
+
+    const fileInput = document.getElementById("fileInput");
+    const fileList = document.getElementById("fileList");
+    let archivos = [];
+
+    fileInput.addEventListener("change", ()=>{
+      for (let file of fileInput.files){
+        archivos.push(file);
+      }
+      mostrarArchivos();
+    });
+
+    function mostrarArchivos(){
+      fileList.innerHTML = "";
+      archivos.forEach((f,i)=>{
+        const chip = document.createElement("div");
+        chip.className="file-chip";
+        chip.innerHTML = `<span>${f.name}</span> <button onclick="eliminarArchivo(${i})">x</button>`;
+        fileList.appendChild(chip);
+      });
+    }
+
+    function eliminarArchivo(idx){
+      archivos.splice(idx,1);
+      mostrarArchivos();
+    }
+
+    function enviar(){
+      const msg = document.getElementById("messageInput").value;
+      if(!msg && archivos.length===0){
+        alert("⚠️ Escribe un mensaje o adjunta archivos");
+        return;
+      }
+      console.log("Mensaje:", msg);
+      console.log("Archivos:", archivos);
+      alert("📤 Enviado: " + (msg ? msg : "") + " + " + archivos.length + " archivo(s)");
+      document.getElementById("messageInput").value = "";
+      archivos = [];
+      mostrarArchivos();
+    }
+  </script>
+</body>
+</html>

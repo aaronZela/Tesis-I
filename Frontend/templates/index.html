@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Análisis de Danzas Tradicionales</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-dance"></i> Sistema de Análisis de Danzas Tradicionales</h1>
+                <p>Extracción y procesamiento de coordenadas de movimiento usando MediaPipe</p>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Upload Section -->
+            <section class="upload-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-upload"></i> Subir Video</h2>
+                    </div>
+                    <div class="card-body">
+                        <form id="uploadForm" enctype="multipart/form-data">
+                            <div class="file-upload-area" id="fileUploadArea">
+                                <div class="upload-content">
+                                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                                    <p>Arrastra tu archivo de video aquí o haz clic para seleccionar</p>
+                                    <p class="file-types">Formatos soportados: MP4, MOV</p>
+                                </div>
+                                <input type="file" id="videoFile" name="video" accept=".mp4,.mov" required>
+                            </div>
+                            
+                            <div class="options-section">
+                                <h3>Opciones de Procesamiento</h3>
+                                <div class="options-grid">
+                                    <label class="option-item">
+                                        <input type="checkbox" name="smooth_enabled" checked>
+                                        <span class="checkmark"></span>
+                                        <span class="option-text">
+                                            <strong>Suavizado</strong>
+                                            <small>Aplica filtro Savitzky-Golay para suavizar trayectorias</small>
+                                        </span>
+                                    </label>
+                                    
+                                    <label class="option-item">
+                                        <input type="checkbox" name="fix_legs" checked>
+                                        <span class="checkmark"></span>
+                                        <span class="option-text">
+                                            <strong>Corrección de Piernas</strong>
+                                            <small>Corrige articulaciones con baja visibilidad</small>
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary" id="uploadBtn">
+                                <i class="fas fa-play"></i> Procesar Video
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Progress Section -->
+            <section class="progress-section" id="progressSection" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-cogs"></i> Procesamiento</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="progress-container">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progressFill"></div>
+                            </div>
+                            <div class="progress-text" id="progressText">Iniciando...</div>
+                        </div>
+                        <div class="status-info" id="statusInfo">
+                            <div class="status-item">
+                                <span class="status-label">Estado:</span>
+                                <span class="status-value" id="statusValue">Preparando</span>
+                            </div>
+                            <div class="status-item">
+                                <span class="status-label">Tiempo:</span>
+                                <span class="status-value" id="timeValue">00:00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section class="results-section" id="resultsSection" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-check-circle"></i> Resultados</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="results-info" id="resultsInfo">
+                            <!-- Información de resultados se llenará dinámicamente -->
+                        </div>
+                        <div class="download-buttons" id="downloadButtons">
+                            <!-- Botones de descarga se generarán dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Files History Section -->
+            <section class="files-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-history"></i> Archivos Procesados</h2>
+                        <button class="btn btn-secondary" onclick="refreshFiles()">
+                            <i class="fas fa-refresh"></i> Actualizar
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="files-list" id="filesList">
+                            <!-- Lista de archivos se llenará dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2025 Sistema de Análisis de Danzas Tradicionales. Desarrollado con MediaPipe y Flask.</p>
+        </footer>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Procesando video...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

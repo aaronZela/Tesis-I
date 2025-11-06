@@ -1,0 +1,7 @@
+{
+  "Test_login.py::test_login_exitoso": true,
+  "Test_login.py::test_login_contraseña_incorrecta": true,
+  "Test_login.py::test_bloqueo_por_intentos_fallidos": true,
+  "Test_login.py::test_desbloqueo_tras_tiempo_de_espera": true,
+  "Test_login.py::test_hash_contraseña_seguro": true
+}

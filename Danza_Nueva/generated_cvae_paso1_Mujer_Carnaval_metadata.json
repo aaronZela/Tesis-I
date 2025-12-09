@@ -1,0 +1,8 @@
+{
+  "paso": 1,
+  "genero": "Mujer",
+  "danza": "Carnaval",
+  "seq_length": 100,
+  "fps": 30,
+  "model_path": "D:\\Tesis implementation\\Backend\\Servicio_IA_Entrenada\\cvae_lstm_best.pt"
+}

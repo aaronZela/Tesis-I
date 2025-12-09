@@ -1,0 +1,9 @@
+{
+  "modelo": "GAN-LSTM",
+  "paso": 1,
+  "genero": "Hombre",
+  "danza": "Carnaval",
+  "seq_length": 228,
+  "fps": 30,
+  "model_path": "D:\\Tesis implementation\\Frontend\\..\\Backend\\Servicio_IA_Entrenada\\gan_lstm_best_model.pt"
+}

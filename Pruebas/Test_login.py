@@ -1,3 +1,4 @@
+
 """
 CP-0002: Comprobar que el sistema permita el acceso seguro mediante login
 utilizando credenciales válidas y controlando intentos fallidos, conforme
@@ -16,7 +17,7 @@ import sys
 import pytest
 from unittest.mock import patch
 from flask import session
-from datetime import timedelta
+from datetime import timedelta, datetime
 from werkzeug.security import check_password_hash
 
 # ==================== CONFIGURACIÓN DE RUTAS ====================
@@ -64,7 +65,7 @@ def test_login_exitoso(client, valid_user):
     CP-0002: Paso 1 - Login exitoso con credenciales válidas
     Precondición: Usuario registrado en el sistema.
     """
-    response = client.post("/login", data=valid_user, follow_redirects=True)
+    response = client.post("/login", json=valid_user, follow_redirects=True)
 
     assert response.status_code == 200, "El servidor no respondió correctamente"
     assert b"Bienvenido" in response.data or b"index" in response.data, \
@@ -87,7 +88,7 @@ def test_login_contraseña_incorrecta(client, valid_user):
     wrong_data = valid_user.copy()
     wrong_data["password"] = "incorrecta123"
 
-    response = client.post("/login", data=wrong_data)
+    response = client.post("/login", json=wrong_data)
 
     assert response.status_code in [401, 403], "El servidor no devolvió código de error esperado"
     assert b"incorrectos" in response.data or b"error" in response.data, "Mensaje de error no mostrado"
@@ -106,13 +107,13 @@ def test_bloqueo_por_intentos_fallidos(client, invalid_user):
 
     # Realizar 5 intentos fallidos consecutivos
     for i in range(MAX_ATTEMPTS):
-        client.post("/login", data=invalid_user)
+        client.post("/login", json=invalid_user)
 
     # Intento adicional debe resultar en bloqueo
-    response = client.post("/login", data=invalid_user)
+    response = client.post("/login", json=invalid_user)
     assert response.status_code == 403, "No se aplicó el bloqueo de cuenta"
     assert b"bloqueada" in response.data or b"bloqueado" in response.data, "Mensaje de bloqueo no mostrado"
-    assert LOGIN_ATTEMPTS[username]["locked_until"] is not None, "No se registró el tiempo de bloqueo"
+    assert "locked_until" in LOGIN_ATTEMPTS[username] and LOGIN_ATTEMPTS[username]["locked_until"] is not None, "No se registró el tiempo de bloqueo"
 
     print(f"✅ Cuenta bloqueada correctamente tras {MAX_ATTEMPTS} intentos fallidos.")
 
@@ -127,10 +128,10 @@ def test_desbloqueo_tras_tiempo_de_espera(client, invalid_user):
     username = invalid_user["username"]
 
     # Forzar bloqueo manualmente
-    LOGIN_ATTEMPTS[username] = {"count": MAX_ATTEMPTS, "locked_until": time.time() - 1}  # ya expiró
+    LOGIN_ATTEMPTS[username] = {"attempts": MAX_ATTEMPTS, "locked_until": datetime.now() - timedelta(seconds=1)}  # ya expiró
 
     # Reintentar login (aún fallará por credenciales, pero no por bloqueo)
-    response = client.post("/login", data=invalid_user)
+    response = client.post("/login", json=invalid_user)
     assert response.status_code in [401, 403], "El usuario debería poder intentar nuevamente tras desbloqueo"
 
     print("✅ Desbloqueo automático tras expiración del bloqueo temporal.")
@@ -142,7 +143,7 @@ def test_hash_contraseña_seguro(valid_user):
     CP-0002: Paso 5 - Verificar que las contraseñas se almacenan con hash
     y no en texto plano.
     """
-    stored_hash = usuarios[valid_user["username"]]
+    stored_hash = usuarios[valid_user["username"]]["password"]
     assert stored_hash != valid_user["password"], "La contraseña está almacenada en texto plano"
     assert check_password_hash(stored_hash, valid_user["password"]), "El hash no valida correctamente la contraseña"
 
@@ -154,7 +155,7 @@ def test_expiracion_sesion(client, valid_user):
     """
     CP-0002: Paso 6 - Verificar expiración de sesión tras inactividad
     """
-    client.post("/login", data=valid_user, follow_redirects=True)
+    client.post("/login", json=valid_user, follow_redirects=True)
 
     with client.session_transaction() as sess:
         sess.permanent = True
@@ -188,7 +189,7 @@ def test_logout_cierra_sesion(client, valid_user):
     """
     CP-0002: Paso 8 - Logout y cierre correcto de sesión
     """
-    client.post("/login", data=valid_user)
+    client.post("/login", json=valid_user)
     response = client.get("/logout", follow_redirects=True)
 
     with client.session_transaction() as sess:

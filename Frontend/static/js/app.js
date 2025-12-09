@@ -11,10 +11,6 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeApp() {
     setupFileUpload();
     setupFormSubmission();
-    loadFilesList();
-    
-    // Cargar lista de archivos cada 30 segundos
-    setInterval(loadFilesList, 30000);
 }
 
 // Configurar drag and drop para subida de archivos
@@ -171,7 +167,6 @@ async function checkStatus() {
                 stopStatusMonitoring();
                 showResults(status);
                 showToast('¡Procesamiento completado exitosamente!', 'success');
-                loadFilesList(); // Actualizar lista de archivos
             } else if (status.status === 'error') {
                 stopStatusMonitoring();
                 showToast(`Error durante el procesamiento: ${status.message}`, 'error');
@@ -208,9 +203,57 @@ function updateProgress(status) {
 // Mostrar resultados
 function showResults(status) {
     const resultsSection = document.getElementById('resultsSection');
+    const aiFeedback = document.getElementById('aiFeedback');
     const resultsInfo = document.getElementById('resultsInfo');
     const downloadButtons = document.getElementById('downloadButtons');
+    const videoSection = document.getElementById('videoSection');
+    const videoContainer = document.getElementById('videoContainer');
     
+    // Mostrar retroalimentación de IA si está disponible
+    if (status.feedback) {
+        const feedback = status.feedback;
+        const precisionColor = feedback.precision >= 80 ? '#28a745' : feedback.precision >= 50 ? '#ffc107' : '#dc3545';
+        const coherenceColor = feedback.coherence >= 80 ? '#28a745' : feedback.coherence >= 50 ? '#ffc107' : '#dc3545';
+
+        aiFeedback.innerHTML = `
+            <div style="margin-bottom: 20px;">
+                <div style="display: flex; gap: 20px; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                            <span style="font-weight: bold;">Precisión:</span>
+                            <span style="color: ${precisionColor}; font-weight: bold;">${feedback.precision}%</span>
+                        </div>
+                        <div style="width: 100%; height: 8px; background-color: #e9ecef; border-radius: 4px;">
+                            <div style="width: ${feedback.precision}%; height: 100%; background-color: ${precisionColor}; border-radius: 4px;"></div>
+                        </div>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                            <span style="font-weight: bold;">Coherencia:</span>
+                            <span style="color: ${coherenceColor}; font-weight: bold;">${feedback.coherence}%</span>
+                        </div>
+                        <div style="width: 100%; height: 8px; background-color: #e9ecef; border-radius: 4px;">
+                            <div style="width: ${feedback.coherence}%; height: 100%; background-color: ${coherenceColor}; border-radius: 4px;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #007bff;">
+                    <h4 style="margin: 0 0 10px 0; color: #495057;">
+                        <i class="fas fa-comments"></i> Comentarios de la IA
+                    </h4>
+                    <ul style="margin: 0; padding-left: 20px; list-style: none;">
+                        ${feedback.messages.map(msg => `<li style="margin-bottom: 8px; display: flex; align-items: flex-start; gap: 8px;">
+                            <i class="fas fa-lightbulb" style="color: #007bff; margin-top: 2px;"></i>
+                            <span>${msg}</span>
+                        </li>`).join('')}
+                    </ul>
+                </div>
+            </div>
+        `;
+    } else {
+        aiFeedback.innerHTML = '<p style="color: #6c757d; font-style: italic;">No se pudo generar retroalimentación de IA.</p>';
+    }
+
     // Información de resultados
     resultsInfo.innerHTML = `
         <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
@@ -228,24 +271,118 @@ function showResults(status) {
                 <strong>Total de frames:</strong> ${status.total_frames || 'N/A'}
             </div>
             <div>
-                <strong>Archivos generados:</strong> 2 (Raw y Procesado)
+                <strong>Archivos generados:</strong> ${status.cvae_json_file && status.gan_json_file ? '4' : '2'} (Raw, Procesado${status.cvae_json_file ? ', CVAE' : ''}${status.gan_json_file ? ', GAN' : ''})
             </div>
         </div>
     `;
     
-    // Botones de descarga
+    // Botones de descarga de JSON (mantener solo los JSONs)
     downloadButtons.innerHTML = `
-        <button class="btn btn-success" onclick="downloadFile('${status.raw_file}')">
-            <i class="fas fa-download"></i> Descargar CSV Raw
-        </button>
-        <button class="btn btn-success" onclick="downloadFile('${status.processed_file}')">
-            <i class="fas fa-download"></i> Descargar CSV Procesado
-        </button>
+        ${status.cvae_json_file ? `<button class="btn btn-primary" onclick="downloadFile('${status.cvae_json_file}')">
+            <i class="fas fa-robot"></i> Descargar JSON CVAE
+        </button>` : ''}
+        ${status.gan_json_file ? `<button class="btn btn-primary" onclick="downloadFile('${status.gan_json_file}')">
+            <i class="fas fa-brain"></i> Descargar JSON GAN
+        </button>` : ''}
     `;
+    
+    // Mostrar videos generados
+    let videoHTML = '';
+    if (status.cvae_video_file) {
+        videoHTML += `
+            <div class="video-item" style="margin-bottom: 30px;">
+                <h3 style="margin-bottom: 15px; color: #333;">
+                    <i class="fas fa-robot"></i> Video CVAE
+                </h3>
+                <video controls preload="metadata" style="width: 100%; max-width: 800px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <source src="/video/${status.cvae_video_file}" type="video/mp4">
+                    Tu navegador no soporta el elemento de video.
+                </video>
+                <div style="margin-top: 10px;">
+                    <button class="btn btn-success" onclick="downloadFile('${status.cvae_video_file}')">
+                        <i class="fas fa-download"></i> Descargar Video CVAE
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+    
+    if (status.gan_video_file) {
+        videoHTML += `
+            <div class="video-item" style="margin-bottom: 30px;">
+                <h3 style="margin-bottom: 15px; color: #333;">
+                    <i class="fas fa-brain"></i> Video GAN
+                </h3>
+                <video controls preload="metadata" style="width: 100%; max-width: 800px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <source src="/video/${status.gan_video_file}" type="video/mp4">
+                    Tu navegador no soporta el elemento de video.
+                </video>
+                <div style="margin-top: 10px;">
+                    <button class="btn btn-success" onclick="downloadFile('${status.gan_video_file}')">
+                        <i class="fas fa-download"></i> Descargar Video GAN
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+    
+    if (!videoHTML) {
+        videoHTML = `
+            <div class="text-center" style="padding: 40px; color: #666;">
+                <i class="fas fa-video-slash" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
+                <p>No se generaron videos. Los archivos JSON están disponibles para descarga.</p>
+            </div>
+        `;
+    }
+    
+    // Agregar información de Google Drive si está disponible
+    if (status.drive_info && status.drive_info.files && status.drive_info.files.length > 0) {
+        videoHTML += `
+            <div style="margin-top: 30px; padding: 20px; background-color: #e8f5e9; border-radius: 8px; border-left: 4px solid #4caf50;">
+                <h4 style="margin: 0 0 10px 0; color: #2e7d32;">
+                    <i class="fas fa-cloud-upload-alt"></i> Archivos subidos a Google Drive
+                </h4>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    ${status.drive_info.files.map(file => `
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-file-video" style="color: #4caf50;"></i>
+                            <span style="flex: 1;"><strong>${file.filename}</strong></span>
+                            <a href="${file.link}" target="_blank" class="btn btn-success" style="padding: 5px 15px; font-size: 0.9rem;">
+                                <i class="fas fa-external-link-alt"></i> Ver en Drive
+                            </a>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+    
+    if (status.drive_info && status.drive_info.errors && status.drive_info.errors.length > 0) {
+        videoHTML += `
+            <div style="margin-top: 20px; padding: 20px; background-color: #ffebee; border-radius: 8px; border-left: 4px solid #f44336;">
+                <h4 style="margin: 0 0 10px 0; color: #c62828;">
+                    <i class="fas fa-exclamation-triangle"></i> Errores al subir a Google Drive
+                </h4>
+                <ul style="margin: 0; padding-left: 20px;">
+                    ${status.drive_info.errors.map(error => `<li style="color: #c62828;">${error}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+    }
+    
+    videoContainer.innerHTML = videoHTML;
     
     // Mostrar sección de resultados
     resultsSection.style.display = 'block';
     resultsSection.scrollIntoView({ behavior: 'smooth' });
+    
+    // Mostrar sección de video si hay videos generados
+    if (status.cvae_video_file || status.gan_video_file) {
+        videoSection.style.display = 'block';
+        setTimeout(() => {
+            videoSection.scrollIntoView({ behavior: 'smooth' });
+        }, 300);
+    }
     
     // Ocultar sección de progreso
     hideProgress();
@@ -293,60 +430,6 @@ async function downloadFile(filename) {
     }
 }
 
-// Cargar lista de archivos
-async function loadFilesList() {
-    try {
-        const response = await fetch('/results');
-        const data = await response.json();
-        
-        if (response.ok) {
-            displayFilesList(data.files);
-        } else {
-            console.error('Error al cargar archivos:', data.error);
-        }
-    } catch (error) {
-        console.error('Error al cargar lista de archivos:', error);
-    }
-}
-
-// Mostrar lista de archivos
-function displayFilesList(files) {
-    const filesList = document.getElementById('filesList');
-    
-    if (files.length === 0) {
-        filesList.innerHTML = `
-            <div class="text-center" style="padding: 40px; color: #666;">
-                <i class="fas fa-folder-open" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
-                <p>No hay archivos procesados aún</p>
-                <p style="font-size: 0.9rem;">Sube tu primer video para comenzar</p>
-            </div>
-        `;
-        return;
-    }
-    
-    filesList.innerHTML = files.map(file => `
-        <div class="file-item">
-            <div class="file-info">
-                <div class="file-name">${file.filename}</div>
-                <div class="file-meta">
-                    Tamaño: ${formatFileSize(file.size)} | 
-                    Creado: ${formatDate(file.created)}
-                </div>
-            </div>
-            <div class="file-actions">
-                <button class="btn btn-success" onclick="downloadFile('${file.filename}')">
-                    <i class="fas fa-download"></i>
-                </button>
-            </div>
-        </div>
-    `).join('');
-}
-
-// Actualizar lista de archivos (función global para botón)
-function refreshFiles() {
-    loadFilesList();
-    showToast('Lista de archivos actualizada', 'success');
-}
 
 // Mostrar/ocultar loading overlay
 function showLoading(show) {

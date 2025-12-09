@@ -15,6 +15,12 @@
                 <h1><i class="fas fa-dance"></i> Sistema de Análisis de Danzas Tradicionales</h1>
                 <p>Extracción y procesamiento de coordenadas de movimiento usando MediaPipe</p>
             </div>
+            <div class="user-info">
+                <span><i class="fas fa-user-circle"></i> {{ session.get('name', 'Usuario') }}</span>
+                <a href="/logout" class="btn-logout">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </a>
+            </div>
         </header>
 
         <!-- Main Content -->
@@ -59,6 +65,49 @@
                                 </div>
                             </div>
                             
+                            <div class="options-section" style="margin-top: 20px;">
+                                <h3>Modelo de IA para Video</h3>
+                                <div class="options-grid">
+                                    <label class="option-item">
+                                        <input type="radio" name="model_selection" value="cvae" checked>
+                                        <span class="checkmark"></span>
+                                        <span class="option-text">
+                                            <strong>CVAE</strong>
+                                            <small>Modelo CVAE-LSTM para generación de danza</small>
+                                        </span>
+                                    </label>
+                                    
+                                    <label class="option-item">
+                                        <input type="radio" name="model_selection" value="gan">
+                                        <span class="checkmark"></span>
+                                        <span class="option-text">
+                                            <strong>GAN</strong>
+                                            <small>Modelo GAN-LSTM para generación de danza</small>
+                                        </span>
+                                    </label>
+                                    
+                                    <label class="option-item">
+                                        <input type="radio" name="model_selection" value="both">
+                                        <span class="checkmark"></span>
+                                        <span class="option-text">
+                                            <strong>Ambos</strong>
+                                            <small>Generar videos con ambos modelos</small>
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="options-section" style="margin-top: 20px;">
+                                <label class="option-item">
+                                    <input type="checkbox" name="save_to_drive" id="saveToDrive">
+                                    <span class="checkmark"></span>
+                                    <span class="option-text">
+                                        <strong>Guardar en Google Drive</strong>
+                                        <small>Subir el video generado a Google Drive</small>
+                                    </span>
+                                </label>
+                            </div>
+                            
                             <button type="submit" class="btn btn-primary" id="uploadBtn">
                                 <i class="fas fa-play"></i> Procesar Video
                             </button>
@@ -101,6 +150,14 @@
                         <h2><i class="fas fa-check-circle"></i> Resultados</h2>
                     </div>
                     <div class="card-body">
+                        <!-- AI Feedback -->
+                        <div class="result-card" style="margin-bottom: 20px;">
+                            <h3><i class="fas fa-brain"></i> Retroalimentación de IA</h3>
+                            <div id="aiFeedback">
+                                <!-- AI feedback will be populated here -->
+                            </div>
+                        </div>
+
                         <div class="results-info" id="resultsInfo">
                             <!-- Información de resultados se llenará dinámicamente -->
                         </div>
@@ -111,18 +168,15 @@
                 </div>
             </section>
 
-            <!-- Files History Section -->
-            <section class="files-section">
+            <!-- Video Section -->
+            <section class="video-section" id="videoSection" style="display: none;">
                 <div class="card">
                     <div class="card-header">
-                        <h2><i class="fas fa-history"></i> Archivos Procesados</h2>
-                        <button class="btn btn-secondary" onclick="refreshFiles()">
-                            <i class="fas fa-refresh"></i> Actualizar
-                        </button>
+                        <h2><i class="fas fa-video"></i> Video de la Danza Generada</h2>
                     </div>
                     <div class="card-body">
-                        <div class="files-list" id="filesList">
-                            <!-- Lista de archivos se llenará dinámicamente -->
+                        <div class="video-container" id="videoContainer">
+                            <!-- Videos se mostrarán aquí dinámicamente -->
                         </div>
                     </div>
                 </div>
